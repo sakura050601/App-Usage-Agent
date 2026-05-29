@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>App Usage Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f0e7;
+            --ink: #14213d;
+            --muted: #5c6b7a;
+            --card: #ffffff;
+            --accent: #fca311;
+            --good: #00a878;
+            --warn: #e85d04;
+            --border: #d9d3c5;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at 20% 20%, #ffe8c2 0%, transparent 45%),
+                radial-gradient(circle at 85% 10%, #c2e9ff 0%, transparent 40%),
+                var(--bg);
+            color: var(--ink);
+            font-family: "Space Grotesk", sans-serif;
+        }
+
+        .container {
+            max-width: 1260px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        .hero {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-end;
+            margin-bottom: 18px;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: clamp(1.6rem, 4vw, 2.8rem);
+            letter-spacing: -0.03em;
+        }
+
+        .hero p {
+            margin: 8px 0 0;
+            color: var(--muted);
+        }
+
+        .pill {
+            font-family: "IBM Plex Mono", monospace;
+            background: #fff3de;
+            border: 1px solid #e8d3a8;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: 0 12px 28px rgba(20, 33, 61, 0.08);
+        }
+
+        .card h2 {
+            margin: 0 0 12px;
+            font-size: 1.02rem;
+        }
+
+        .controls {
+            grid-column: span 12;
+        }
+
+        .kpi {
+            grid-column: span 3;
+        }
+
+        .trend {
+            grid-column: span 8;
+        }
+
+        .trend-chart-frame {
+            width: 100%;
+            height: 340px;
+            min-height: 340px;
+            max-height: 340px;
+            position: relative;
+        }
+
+        .trend-chart-frame canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .apps {
+            grid-column: span 4;
+        }
+
+        .insights {
+            grid-column: span 6;
+        }
+
+        .score-panel {
+            display: grid;
+            gap: 14px;
+        }
+
+        .score-gauge-shell {
+            display: grid;
+            justify-items: center;
+            gap: 10px;
+            padding: 10px 0 2px;
+        }
+
+        .score-gauge {
+            width: 180px;
+            height: 90px;
+            border-radius: 180px 180px 0 0;
+            background:
+                radial-gradient(circle at 50% 100%, #ffffff 0 20px, transparent 21px),
+                conic-gradient(from 180deg, #ef4444 0 28%, #f59e0b 28% 58%, #fca311 58% 78%, #00a878 78% 100%);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #ead8c0;
+            box-shadow: inset 0 10px 24px rgba(255, 255, 255, 0.55);
+        }
+
+        .score-gauge::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: -1px;
+            width: 120px;
+            height: 60px;
+            transform: translateX(-50%);
+            border-radius: 120px 120px 0 0;
+            background: var(--card);
+            border: 1px solid #ead8c0;
+            border-bottom: 0;
+        }
+
+        .score-gauge-needle {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            width: 2px;
+            height: 70px;
+            transform-origin: bottom center;
+            background: #1f2937;
+            border-radius: 999px;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+            z-index: 2;
+            transition: transform .35s ease;
+        }
+
+        .score-gauge-center {
+            position: absolute;
+            left: 50%;
+            bottom: 8px;
+            transform: translateX(-50%);
+            z-index: 3;
+            display: grid;
+            justify-items: center;
+            gap: 2px;
+            text-align: center;
+        }
+
+        .score-gauge-value {
+            font-size: 2.2rem;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: var(--ink);
+        }
+
+        .score-gauge-label {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        .score-bars {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .score-bar-card {
+            border: 1px solid #ead8c0;
+            border-radius: 16px;
+            padding: 12px;
+            background: linear-gradient(180deg, #fffdf8, #fff8ee);
+            display: grid;
+            gap: 6px;
+        }
+
+        .score-bar-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            font-size: 0.88rem;
+        }
+
+        .score-bar-name {
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .score-bar-value {
+            color: var(--muted);
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.8rem;
+        }
+
+        .score-bar-desc {
+            color: var(--muted);
+            font-size: 0.84rem;
+            line-height: 1.55;
+        }
+
+        .score-bar-track {
+            width: 100%;
+            height: 9px;
+            border-radius: 999px;
+            background: #e9edf3;
+            overflow: hidden;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #fca311, #00a878);
+        }
+
+        .suggestions {
+            grid-column: span 6;
+        }
+
+        .deep-narrative {
+            margin: 0 0 12px;
+            padding: 14px 14px 12px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #fff8ec, #fffdf7);
+            border: 1px solid #f0dcc0;
+            color: var(--ink);
+            line-height: 1.75;
+            white-space: pre-wrap;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        input {
+            border: 1px solid #cfd8e2;
+            border-radius: 10px;
+            padding: 10px;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.9rem;
+            background: #fbfdff;
+            color: var(--ink);
+        }
+
+        button {
+            border: none;
+            border-radius: 12px;
+            padding: 11px 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform .16s ease, box-shadow .16s ease;
+            background: linear-gradient(120deg, #fca311, #ffbf69);
+            color: #1f2937;
+        }
+
+        button.secondary {
+            background: #e9f4ff;
+            border: 1px solid #c7def7;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(20, 33, 61, .15);
+        }
+
+        .metric {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .subtle {
+            color: var(--muted);
+            font-size: .88rem;
+        }
+
+        ul {
+            margin: 8px 0 0;
+            padding-left: 18px;
+        }
+
+        li {
+            margin-bottom: 7px;
+        }
+
+        .bar {
+            height: 10px;
+            border-radius: 999px;
+            background: #e9edf3;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .bar>div {
+            height: 100%;
+            background: linear-gradient(90deg, #00a878, #5dd39e);
+        }
+
+        .top-apps-bars {
+            display: grid;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .top-app-row {
+            display: grid;
+            gap: 6px;
+        }
+
+        .top-app-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+            font-size: 0.88rem;
+        }
+
+        .top-app-name {
+            font-weight: 600;
+            color: var(--ink);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .top-app-stats {
+            color: var(--muted);
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .top-app-track {
+            width: 100%;
+            height: 9px;
+            border-radius: 999px;
+            background: #e9edf3;
+            overflow: hidden;
+        }
+
+        .top-app-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #fca311, #ffbf69);
+        }
+
+        #status {
+            margin-top: 10px;
+            font-size: .9rem;
+            color: var(--muted);
+        }
+
+        @media (max-width: 960px) {
+
+            .kpi,
+            .trend,
+            .apps,
+            .insights,
+            .suggestions,
+            .controls {
+                grid-column: span 12;
+            }
+
+            .controls-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .trend-chart-frame {
+                height: 300px;
+                min-height: 300px;
+                max-height: 300px;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .trend-chart-frame {
+                height: 240px;
+                min-height: 240px;
+                max-height: 240px;
+            }
+
+            .score-bars {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="hero">
+            <div>
+                <h1>Usage Intelligence Board</h1>
+                <p>块状模块卡片展示你的应用使用、趋势、深度建议。</p>
+            </div>
+            <div class="pill">Manual Trigger Mode</div>
+        </div>
+
+        <div class="grid">
+            <section class="card controls">
+                <h2>控制台</h2>
+                <div class="controls-grid">
+                    <label>Endpoint
+                        <input id="endpoint" value="http://127.0.0.1:8000/mcp" />
+                    </label>
+                    <label>Report Days
+                        <input id="report_days" type="number" min="1" max="30" value="1" />
+                    </label>
+                    <label>Trend Days
+                        <input id="trend_days" type="number" min="1" max="30" value="7" />
+                    </label>
+                    <label>Top Apps
+                        <input id="report_top_n" type="number" min="1" max="50" value="10" />
+                    </label>
+                    <label>Trend Top N
+                        <input id="trend_top_n" type="number" min="1" max="20" value="5" />
+                    </label>
+                    <label>Goal
+                        <input id="user_goal" placeholder="例如：提高深度工作时长" />
+                    </label>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+                    <button onclick="runAnalyze()">刷新分析</button>
+                    <button class="secondary" onclick="exportFile('markdown')">导出 Markdown</button>
+                    <button class="secondary" onclick="exportFile('html')">导出 HTML</button>
+                </div>
+                <div id="status">等待触发</div>
+            </section>
+
+            <section class="card kpi">
+                <h2>Focus Score</h2>
+                <div id="focusScore" class="metric">--</div>
+                <div id="focusSource" class="subtle">source: --</div>
+            </section>
+
+            <section class="card kpi">
+                <h2>Total Hours</h2>
+                <div id="totalHours" class="metric">--</div>
+                <div class="subtle">report period</div>
+            </section>
+
+            <section class="card kpi">
+                <h2>Days With Data</h2>
+                <div id="daysData" class="metric">--</div>
+                <div class="subtle">trend coverage</div>
+            </section>
+
+            <section class="card kpi">
+                <h2>Top App Share</h2>
+                <div id="topShare" class="metric">--</div>
+                <div class="bar">
+                    <div id="shareBar" style="width:0%"></div>
+                </div>
+            </section>
+
+            <section class="card trend">
+                <h2>Usage Trend</h2>
+                <div class="trend-chart-frame">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </section>
+
+            <section class="card apps">
+                <h2>Top Apps</h2>
+                <div id="topAppsBars" class="top-apps-bars"></div>
+            </section>
+
+            <section class="card insights">
+                <h2>Score Components</h2>
+                <div class="score-panel">
+                    <div class="score-gauge-shell">
+                        <div id="scoreGauge" class="score-gauge">
+                            <div id="scoreNeedle" class="score-gauge-needle"></div>
+                            <div class="score-gauge-center">
+                                <div id="scoreGaugeValue" class="score-gauge-value">--</div>
+                                <div class="score-gauge-label">/ 100</div>
+                            </div>
+                        </div>
+                        <div id="scoreGaugeLabel" class="subtle">等待分析结果</div>
+                    </div>
+                    <div id="componentsList" class="score-bars"></div>
+                </div>
+            </section>
+
+            <section class="card suggestions">
+                <h2>Deep Actions</h2>
+                <div id="deepNarrative" class="deep-narrative">等待分析结果...</div>
+                <ul id="actionsList"></ul>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        let trendChart = null;
+
+        function payload() {
+            return {
+                endpoint: document.getElementById("endpoint").value.trim(),
+                report_days: Number(document.getElementById("report_days").value),
+                report_top_n: Number(document.getElementById("report_top_n").value),
+                trend_days: Number(document.getElementById("trend_days").value),
+                trend_top_n: Number(document.getElementById("trend_top_n").value),
+                user_goal: document.getElementById("user_goal").value.trim() || null
+            };
+        }
+
+        function setStatus(message, isError = false) {
+            const el = document.getElementById("status");
+            el.textContent = message;
+            el.style.color = isError ? "#b42318" : "#5c6b7a";
+        }
+
+        function renderList(elId, values, fallback = "No data") {
+            const el = document.getElementById(elId);
+            el.innerHTML = "";
+            if (!values || values.length === 0) {
+                const li = document.createElement("li");
+                li.textContent = fallback;
+                el.appendChild(li);
+                return;
+            }
+            values.forEach((value) => {
+                const li = document.createElement("li");
+                li.textContent = value;
+                el.appendChild(li);
+            });
+        }
+
+        function componentDescription(name, score) {
+            const numeric = Number(score || 0);
+            const band = numeric >= 80 ? "高" : numeric >= 65 ? "中高" : numeric >= 50 ? "中等" : "偏低";
+
+            const descriptions = {
+                efficiency: {
+                    title: "效率分",
+                    high: "高分表示你更容易把时间集中在主要任务上，单位时间产出更高，切换成本更低。",
+                    low: "低分通常意味着操作分散、任务切换较多，或大量时间被非核心应用消耗。"
+                },
+                focus_balance: {
+                    title: "平衡分",
+                    high: "高分表示你的注意力分布更均衡，主任务和辅助任务之间不会出现明显倾斜。",
+                    low: "低分通常意味着某一个应用占用过高，使用结构偏单一，容易形成注意力挤压。"
+                },
+                consistency: {
+                    title: "稳定性分",
+                    high: "高分表示你每天的使用节奏更平稳，波动较小，适合建立稳定的工作习惯。",
+                    low: "低分通常意味着每天使用时长起伏明显，节奏容易被会议、消息或临时事务打断。"
+                },
+                sustainability: {
+                    title: "可持续分",
+                    high: "高分表示当前使用强度更接近日常可长期维持的状态，不容易过载。",
+                    low: "低分通常意味着当前时长过高、恢复不足，或作息与任务安排不利于长期稳定推进。"
+                }
+            };
+
+            const config = descriptions[name] || {
+                title: name,
+                high: "高分表示这一项表现更健康、更接近理想状态。",
+                low: "低分表示这一项还有明显优化空间。"
+            };
+
+            return {
+                title: config.title,
+                band,
+                high: config.high,
+                low: config.low
+            };
+        }
+
+        function renderScorePanel(score, components) {
+            const gaugeValue = document.getElementById("scoreGaugeValue");
+            const gaugeLabel = document.getElementById("scoreGaugeLabel");
+            const needle = document.getElementById("scoreNeedle");
+            const root = document.getElementById("componentsList");
+
+            const normalizedScore = Number(score || 0);
+            gaugeValue.textContent = normalizedScore ? normalizedScore.toFixed(1) : "--";
+            gaugeLabel.textContent = normalizedScore ? (normalizedScore >= 80 ? "优秀" : normalizedScore >= 65 ? "良好" : normalizedScore >= 50 ? "待优化" : "需关注") : "等待分析结果";
+
+            const angle = -90 + Math.max(0, Math.min(100, normalizedScore)) * 1.8;
+            needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+
+            root.innerHTML = "";
+            const entries = Object.entries(components || {});
+            if (!entries.length) {
+                root.textContent = "No component data";
+                return;
+            }
+
+            entries.forEach(([name, value]) => {
+                const numeric = Number(value || 0);
+                const info = componentDescription(name, numeric);
+                const row = document.createElement("div");
+                row.className = "score-bar-card";
+
+                const meta = document.createElement("div");
+                meta.className = "score-bar-meta";
+
+                const label = document.createElement("div");
+                label.className = "score-bar-name";
+                label.textContent = info.title;
+
+                const stat = document.createElement("div");
+                stat.className = "score-bar-value";
+                stat.textContent = `${numeric.toFixed(1)}/100 · ${info.band}`;
+
+                const desc = document.createElement("div");
+                desc.className = "score-bar-desc";
+                desc.textContent = numeric >= 65 ? info.high : info.low;
+
+                const track = document.createElement("div");
+                track.className = "score-bar-track";
+
+                const fill = document.createElement("div");
+                fill.className = "score-bar-fill";
+                fill.style.width = `${Math.max(4, Math.min(100, numeric))}%`;
+
+                meta.appendChild(label);
+                meta.appendChild(stat);
+                track.appendChild(fill);
+                row.appendChild(meta);
+                row.appendChild(desc);
+                row.appendChild(track);
+                root.appendChild(row);
+            });
+        }
+
+        function renderChart(trendRows) {
+            const labels = trendRows.map((row) => row.date);
+            const values = trendRows.map((row) => row.total_hours || 0);
+            const ctx = document.getElementById("trendChart").getContext("2d");
+
+            if (trendChart) trendChart.destroy();
+
+            trendChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels,
+                    datasets: [{
+                        label: "Hours",
+                        data: values,
+                        borderWidth: 3,
+                        borderColor: "#fca311",
+                        pointBackgroundColor: "#14213d",
+                        tension: 0.35,
+                        fill: true,
+                        backgroundColor: "rgba(252, 163, 17, 0.16)"
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.08)" } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderTopAppsBars(topApps, totalHours) {
+            const root = document.getElementById("topAppsBars");
+            root.innerHTML = "";
+
+            if (!topApps || topApps.length === 0) {
+                root.textContent = "No app data";
+                return;
+            }
+
+            const totalMinutes = Math.max(0, Number(totalHours || 0) * 60);
+            const maxMinutes = Math.max(...topApps.map((x) => Number(x.minutes || 0)), 0);
+
+            topApps.forEach((item) => {
+                const app = item.app || "Unknown";
+                const minutes = Number(item.minutes || 0);
+                const share = totalMinutes > 0 ? (minutes / totalMinutes) * 100 : 0;
+                const width = maxMinutes > 0 ? (minutes / maxMinutes) * 100 : 0;
+
+                const row = document.createElement("div");
+                row.className = "top-app-row";
+
+                const meta = document.createElement("div");
+                meta.className = "top-app-meta";
+
+                const name = document.createElement("div");
+                name.className = "top-app-name";
+                name.textContent = app;
+
+                const stats = document.createElement("div");
+                stats.className = "top-app-stats";
+                stats.textContent = `${minutes.toFixed(2)} min | ${share.toFixed(1)}%`;
+
+                meta.appendChild(name);
+                meta.appendChild(stats);
+
+                const track = document.createElement("div");
+                track.className = "top-app-track";
+
+                const fill = document.createElement("div");
+                fill.className = "top-app-fill";
+                fill.style.width = `${Math.max(2, width)}%`;
+
+                track.appendChild(fill);
+                row.appendChild(meta);
+                row.appendChild(track);
+                root.appendChild(row);
+            });
+        }
+
+        async function runAnalyze() {
+            setStatus("分析中...");
+            try {
+                const res = await fetch("/api/analyze", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload())
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    setStatus(data.detail || "分析失败", true);
+                    return;
+                }
+
+                const report = data.report || {};
+                const trend = data.trend || {};
+                const insights = data.insights || {};
+
+                const totalHours = Number(report.total_hours || 0);
+                const topApps = report.top_apps || [];
+                const topMinutes = topApps.length ? Number(topApps[0].minutes || 0) : 0;
+                const topShare = totalHours > 0 ? ((topMinutes / (totalHours * 60)) * 100) : 0;
+
+                document.getElementById("focusScore").textContent = insights.focus_score?.score ?? "--";
+                document.getElementById("focusSource").textContent = `source: ${insights.analysis_source || "rules"}`;
+                document.getElementById("totalHours").textContent = totalHours.toFixed(2);
+                document.getElementById("daysData").textContent = String(trend.days_with_data || 0);
+                document.getElementById("topShare").textContent = `${topShare.toFixed(1)}%`;
+                document.getElementById("shareBar").style.width = `${Math.min(100, topShare)}%`;
+
+                renderTopAppsBars(topApps, totalHours);
+
+                const components = insights.focus_score?.components || {};
+                renderScorePanel(insights.focus_score?.score, components);
+
+                document.getElementById("deepNarrative").textContent = insights.deep_narrative || "No deep narrative";
+                renderList("actionsList", insights.deep_actions || [], "No deep action");
+                renderChart(trend.trend || []);
+
+                setStatus("分析完成");
+            } catch (err) {
+                setStatus(`请求失败: ${err.message}`, true);
+            }
+        }
+
+        async function exportFile(format) {
+            const endpoint = format === "html" ? "/api/export/html" : "/api/export/markdown";
+            const filename = format === "html" ? "app-usage-report.html" : "app-usage-report.md";
+
+            setStatus(`导出 ${format} 中...`);
+            try {
+                const res = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload())
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    setStatus(data.detail || "导出失败", true);
+                    return;
+                }
+
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                setStatus(`导出完成: ${filename}`);
+            } catch (err) {
+                setStatus(`导出失败: ${err.message}`, true);
+            }
+        }
+    </script>
+</body>
+
+</html>

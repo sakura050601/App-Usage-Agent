@@ -1,0 +1,7 @@
+anyio
+fastapi
+httpx
+jinja2
+mcp
+requests
+uvicorn
