@@ -82,7 +82,17 @@ source .venv/bin/activate
 python client.py
 ```
 
-## 6. API Overview
+## 6. Dashboard Preview
+
+### dashboard1
+
+![Dashboard Preview 1](imgs/dashboard1.png)
+
+### dashboard2
+
+![Dashboard Preview 2](imgs/dashboard2.png)
+
+## 7. API Overview
 
 Implemented in [dashboard_app.py](dashboard_app.py):
 
@@ -108,7 +118,7 @@ Request payload example:
 }
 ```
 
-## 7. Architecture
+## 8. Architecture
 
 ```mermaid
 flowchart LR
@@ -121,7 +131,7 @@ flowchart LR
   WEB --> INS[insight_engine.py]
 ```
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 - MCP endpoint not reachable:
   - Confirm server is running on the same host/port.
@@ -132,16 +142,16 @@ flowchart LR
 - Browser request to `/mcp` looks unreadable:
   - MCP endpoint is protocol transport, not a human-facing page.
 
-## 9. Development Notes
+## 10. Development Notes
 
 - Keep MCP tools in [server.py](server.py) as protocol/data contracts.
 - Reuse [mcp_service.py](mcp_service.py) for new clients.
 - Keep UI-only logic inside [templates/dashboard.html](templates/dashboard.html).
 
-## 10. License
+## 11. License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).
 
-## 11. Chinese Documentation
+## 12. Chinese Documentation
 
 For Chinese documentation, see [README.zh-CN.md](README.zh-CN.md).

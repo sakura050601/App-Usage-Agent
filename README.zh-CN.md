@@ -82,7 +82,17 @@ source .venv/bin/activate
 python client.py
 ```
 
-## 6. API 概览
+## 6. Dashboard 展示效果
+
+### dashboard1
+
+![Dashboard 展示 1](imgs/dashboard1.png)
+
+### dashboard2
+
+![Dashboard 展示 2](imgs/dashboard2.png)
+
+## 7. API 概览
 
 定义于 [dashboard_app.py](dashboard_app.py)：
 
@@ -108,7 +118,7 @@ python client.py
 }
 ```
 
-## 7. 架构示意
+## 8. 架构示意
 
 ```mermaid
 flowchart LR
@@ -121,7 +131,7 @@ flowchart LR
   WEB --> INS[insight_engine.py]
 ```
 
-## 8. 常见问题
+## 9. 常见问题
 
 - 无法连接 MCP endpoint：
   - 确认 server 已启动且端口一致。
@@ -132,16 +142,16 @@ flowchart LR
 - 浏览器直接访问 `/mcp` 看起来不可读：
   - 这是协议传输端点，不是面向人阅读的页面。
 
-## 9. 开发建议
+## 10. 开发建议
 
 - 将 MCP 工具契约保持在 [server.py](server.py)。
 - 新客户端优先复用 [mcp_service.py](mcp_service.py)。
 - 纯展示逻辑放在 [templates/dashboard.html](templates/dashboard.html)。
 
-## 10. 许可证
+## 11. 许可证
 
 本项目使用 MIT 许可证，详见 [LICENSE](LICENSE)。
 
-## 11. English Documentation
+## 12. English Documentation
 
 英文说明见 [README.md](README.md)。
